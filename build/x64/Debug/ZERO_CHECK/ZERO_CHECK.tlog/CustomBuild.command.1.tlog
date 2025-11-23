@@ -1,0 +1,10 @@
+^D:\TECH\SDE\MULTI-THREADED-WEB-CRAWLER\BUILD\CMAKEFILES\7E9E026334AD400A23A5C0FBC4456EFC\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Tech/SDE/Multi-threaded-Web-Crawler -BD:/Tech/SDE/Multi-threaded-Web-Crawler/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/Tech/SDE/Multi-threaded-Web-Crawler/build/SimpleWebCrawler.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Tech\SDE\Multi-threaded-Web-Crawler\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Tech\SDE\Multi-threaded-Web-Crawler\include\thread_safe_queue.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Tech\SDE\Multi-threaded-Web-Crawler\include\thread_safe_set.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Tech\SDE\Multi-threaded-Web-Crawler\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{4C9B1DA3-78D9-3AC4-BED9-3D6F4ECE7DCB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{13B3D334-53A8-3CDB-A78D-DAB08369962D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,41 +1,87 @@
+
 # Multi-threaded Web Crawler in C++
 
-A high-performance, concurrent web crawler built from the ground up in C++ to efficiently scrape and index websites. This project demonstrates a deep understanding of multi-threading, synchronization primitives, and low-level resource management.
+A high-performance, concurrent web crawler built from the ground up in C++ to efficiently scrape and index websites within a given domain. This project demonstrates a deep understanding of multi-threading, synchronization primitives (mutexes, condition variables), low-level resource management, and core networking/parsing concepts using external libraries.
 
 ## Key Features
 
-- **Multi-threaded Architecture**: Utilizes multiple worker threads to fetch and process web pages in parallel, maximizing I/O throughput.
-- **Thread-Safe Queue**: Implements a blocking, thread-safe queue using C++ STL mutexes and condition variables to manage the list of URLs to be crawled.
-- **Duplicate URL Prevention**: Employs a shared, thread-safe set to keep track of visited URLs, preventing redundant work and crawl loops.
-- **Robots.txt Compliance**: Includes a module to fetch and respect `robots.txt` politeness policies before crawling a domain.
-- **HTML Parsing**: Uses an external library (Gumbo-parser) to parse HTML content and extract new hyperlinks for the queue.
+* **Multi-threaded Architecture** : Utilizes `std::thread` to create multiple worker threads that fetch and process web pages in parallel, maximizing network I/O throughput.
+* **Thread-Safe Queue** : Implements a blocking, thread-safe queue (`ThreadSafeQueue.hpp`) using `std::mutex` and `std::condition_variable` to manage the list of URLs to be crawled, preventing race conditions and ensuring efficient thread waiting.
+* **Duplicate URL Prevention** : Employs a shared, thread-safe set (`ThreadSafeSet.hpp`) using `std::mutex` to keep track of visited URLs, preventing redundant work and crawl loops.
+* **HTTPS & Redirects** : Uses `libcurl` for making robust HTTPS requests, automatically following server-side redirects.
+* **HTML Parsing & Link Extraction** : Uses `gumbo-parser` to parse HTML5 content and accurately extract all valid hyperlinks (`<a>` tags).
+* **Relative URL Resolution** : Includes basic logic to resolve relative URLs (e.g., `/about`, `page.html`) into absolute URLs based on the current page's URL.
+* **Robots.txt Awareness (Design Consideration)** : Designed with the standard requirement of respecting `robots.txt` policies in mind (implementation of fetching/parsing `robots.txt` is a planned enhancement).
 
 ## Tech Stack
 
-- **Language**: C++17
-- **Core Libraries**: C++ Standard Library (STL) (`<thread>`, `<mutex>`, `<condition_variable>`)
-- **Networking**: `libcurl` for making HTTP requests
-- **Parsing**: `gumbo-parser` for HTML5 parsing
-- **Build System**: `CMake`
+* **Language** : C++17
+* **Core Libraries** : C++ Standard Library (`<thread>`, `<mutex>`, `<condition_variable>`, `<atomic>`, `<vector>`, `<string>`, `<queue>`, `<unordered_set>`, `<optional>`)
+* **Networking** : `libcurl` (via CMake `find_package`)
+* **Parsing** : `gumbo-parser` (via CMake `find_path`/`find_library`)
+* **Build System** : `CMake`
 
 ## Architecture Overview
 
-The crawler operates with a producer-consumer pattern. A main thread initializes the process and seeds a thread-safe queue with starting URLs. Multiple worker threads then run concurrently:
+The crawler operates with a producer-consumer pattern using a central thread-safe queue and set:
 
-1. **Dequeue**: A worker thread locks the queue, dequeues a URL, and releases the lock. If the queue is empty, the thread waits on a condition variable.
-2. **Fetch**: It uses `libcurl` to download the HTML content of the URL.
-3. **Parse**: It uses `gumbo-parser` to extract all valid `href` links from the page.
-4. **Enqueue**: For each new link found, the worker thread locks the queue and the visited set, and if the URL has not been visited, it enqueues it and adds it to the visited set.
+1. **Initialization** : The main thread initializes `libcurl`, seeds the `url_queue` with the starting URL provided via command line.
+2. **Worker Threads** : Multiple worker threads (`NUM_THREADS`) are launched. Each worker runs a loop:
 
-This process continues until the queue is empty and all threads are idle.
+* **Dequeue** : Waits for and pops a URL from the `url_queue` (thread-safe). If the queue signals stop and is empty, the thread exits.
+* **Check Visited** : Attempts to insert the URL into the `visited_urls` set (thread-safe). If already present, skips to the next URL.
+* **Fetch** : Uses its own `libcurl` handle to download the HTML content of the URL, handling HTTPS and redirects.
+* **Parse** : If the fetch is successful and content is HTML, uses `gumbo-parser` to parse the content.
+* **Extract & Resolve** : Extracts all `href` attributes from `<a>` tags and resolves them into absolute URLs.
+* **Enqueue** : For each valid, absolute URL belonging to the original domain, pushes it onto the `url_queue` (thread-safe).
 
-## Setup and Installation (Placeholder)
+3. **Monitoring & Termination** : The main thread periodically checks if the `url_queue` is empty and if any `active_workers` (tracked by an `std::atomic`) are still busy. When both conditions are met (queue empty, workers idle), it signals the queue to stop and waits (`join`) for all worker threads to finish.
 
-1. Clone the repository and its submodules (if any).
-2. Create a build directory: `mkdir build && cd build`
-3. Run CMake to configure the project: `cmake ..`
-4. Compile the project: `make`
+This process continues until no new, unvisited URLs within the target domain are found.
 
-## Usage (Placeholder)
+## Setup and Installation
 
-`./crawler <start-url> <num-threads>`
+1. **Prerequisites** :
+
+* A C++17 compliant compiler (GCC, Clang, MSVC).
+* CMake (version 3.10+).
+* `libcurl` development library installed.
+* `gumbo-parser` development library installed.
+* (Recommended for Windows) `vcpkg` to manage C++ dependencies.
+
+2. **Clone Repository** : `git https://github.com/keshavk215/Multi-threaded-Web-Crawler`
+
+3. **Configure with CMake** :
+
+```
+   cd Multi-threaded-Web-Crawler
+   mkdir build
+   cd build
+   # If using vcpkg (replace path if needed):
+   cmake .. -DCMAKE_TOOLCHAIN_FILE=C:/src/vcpkg/scripts/buildsystems/vcpkg.cmake
+   # Or, if libraries are in standard system paths:
+   # cmake ..
+```
+
+4. **Compile** :
+
+```
+   cmake --build .
+   # Or on Linux/macOS: make
+```
+
+5. **Place CA Certificate** : Ensure `cacert.pem` (downloaded from curl website) is automatically copied to the build output directory by CMake (as configured in `CMakeLists.txt`).
+
+## Usage
+
+Run the compiled executable from the build output directory (e.g., `build/Debug` or `build/`), providing a starting URL:
+
+```
+./crawler <start-url>
+```
+
+Example:
+
+```
+./crawler https://google.com
+```
